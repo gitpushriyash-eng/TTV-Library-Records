@@ -1,0 +1,294 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<https://script.google.com/macros/s/AKfycbymIbB5xa8pxsviPsdITX-lOnjF8gbU_VsPwVwS8qif92f1KNEQg7Kk2wLo7JgENzmfCQ/exec>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTV Library Records</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+    padding:20px;
+}
+
+.container{
+    max-width:1100px;
+    margin:auto;
+}
+
+h1{
+    text-align:center;
+    color:#2c3e50;
+    margin-bottom:20px;
+}
+
+.form-box{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+    margin-bottom:20px;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:15px;
+}
+
+input{
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:5px;
+    width:100%;
+}
+
+button{
+    background:#3498db;
+    color:white;
+    border:none;
+    padding:12px;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+button:hover{
+    background:#2980b9;
+}
+
+.table-box{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+    text-align:center;
+}
+
+th{
+    background:#2c3e50;
+    color:white;
+}
+
+.delete-btn{
+    background:#e74c3c;
+    padding:6px 12px;
+}
+
+.delete-btn:hover{
+    background:#c0392b;
+}
+
+.search-box{
+    margin-bottom:15px;
+}
+
+.search-box input{
+    width:100%;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+    <h1>TTV Library Records</h1>
+
+    <div class="form-box">
+        <div class="form-grid">
+            <input type="text" id="studentName" placeholder="Student Name">
+            <input type="text" id="bookNumber" placeholder="Book Number">
+            <input type="text" id="bookName" placeholder="Book Name">
+            <input type="date" id="issueDate">
+            <input type="date" id="returnDate">
+            <button onclick="addRecord()">Add Record</button>
+        </div>
+    </div>
+
+    <div class="table-box">
+
+        <div class="search-box">
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search Student or Book..."
+                onkeyup="displayRecords()">
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Book Number</th>
+                    <th>Book Name</th>
+                    <th>Issue Date</th>
+                    <th>Return Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="recordTable"></tbody>
+        </table>
+
+    </div>
+
+</div>
+
+<script>
+
+<const GOOGLE_SHEET_URL = https://script.google.com/macros/s/AKfycbymIbB5xa8pxsviPsdITX-lOnjF8gbU_VsPwVwS8qif92f1KNEQg7Kk2wLo7JgENzmfCQ/exec>
+
+let records = JSON.parse(localStorage.getItem("libraryRecords")) || [];
+
+function saveRecords(){
+    localStorage.setItem("libraryRecords", JSON.stringify(records));
+}
+
+function sendToGoogleSheet(data){
+
+    if(GOOGLE_SHEET_URL === "PASTE_YOUR_URL_HERE"){
+        return;
+    }
+
+    fetch(GOOGLE_SHEET_URL,{
+        method:"POST",
+        body:JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log("Saved to Google Sheet", result);
+    })
+    .catch(error => {
+        console.error("Google Sheet Error:", error);
+    });
+}
+
+function displayRecords(){
+
+    const table = document.getElementById("recordTable");
+    const search = document
+        .getElementById("searchInput")
+        .value
+        .toLowerCase();
+
+    table.innerHTML = "";
+
+    records.forEach((record,index)=>{
+
+        const match =
+            record.studentName.toLowerCase().includes(search) ||
+            record.bookName.toLowerCase().includes(search) ||
+            record.bookNumber.toLowerCase().includes(search);
+
+        if(!match) return;
+
+        table.innerHTML += `
+        <tr>
+            <td>${record.studentName}</td>
+            <td>${record.bookNumber}</td>
+            <td>${record.bookName}</td>
+            <td>${record.issueDate}</td>
+            <td>${record.returnDate}</td>
+            <td>
+                <button class="delete-btn"
+                onclick="deleteRecord(${index})">
+                Delete
+                </button>
+            </td>
+        </tr>
+        `;
+    });
+}
+
+function addRecord(){
+
+    const studentName =
+        document.getElementById("studentName").value.trim();
+
+    const bookNumber =
+        document.getElementById("bookNumber").value.trim();
+
+    const bookName =
+        document.getElementById("bookName").value.trim();
+
+    const issueDate =
+        document.getElementById("issueDate").value;
+
+    const returnDate =
+        document.getElementById("returnDate").value;
+
+    if(
+        studentName === "" ||
+        bookNumber === "" ||
+        bookName === "" ||
+        issueDate === "" ||
+        returnDate === ""
+    ){
+        alert("Please fill all fields.");
+        return;
+    }
+
+    const record = {
+        studentName,
+        bookNumber,
+        bookName,
+        issueDate,
+        returnDate
+    };
+
+    records.push(record);
+
+    saveRecords();
+
+    sendToGoogleSheet(record);
+
+    displayRecords();
+
+    document.getElementById("studentName").value = "";
+    document.getElementById("bookNumber").value = "";
+    document.getElementById("bookName").value = "";
+    document.getElementById("issueDate").value = "";
+    document.getElementById("returnDate").value = "";
+}
+
+function deleteRecord(index){
+
+    if(confirm("Delete this record?")){
+
+        records.splice(index,1);
+
+        saveRecords();
+
+        displayRecords();
+    }
+}
+
+displayRecords();
+
+</script>
+
+</body>
+</html>
+```
